@@ -4,6 +4,8 @@
     タスクスケジューラ登録スクリプト
 .DESCRIPTION
     Diagnostic_Main.ps1をPC起動時に自動実行するようタスクスケジューラに登録します
+.VERSION
+    1.1 - UTF-8 BOM encoding fix (2025-12-13)
 .AUTHOR
     RukiTech
 #>

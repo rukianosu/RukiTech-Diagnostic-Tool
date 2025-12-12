@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     CPU負荷テストスクリプト
 .DESCRIPTION

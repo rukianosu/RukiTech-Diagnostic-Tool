@@ -105,4 +105,13 @@ Monitorモードとは別に、現在のシステム状態、過去のイベン�
 
 ---
 
-[詳細ドキュメント](RukiTech_Diagnostic_Tool/README.md) | [Issues](https://github.com/rukianosu/RukiTech-Diagnostic-Tool/issues)
+## 🛠️ 対象システム (動作確認環境)
+
+- **機種**: 一般的な Windows PC (デスクトップ / ノート / Tablet)
+- **プロセッサ**: Intel Core i シリーズ / AMD Ryzen シリーズ 等
+- **OS**: Windows 10 / 11 (21H2以降推奨)
+- **PowerShell**: 5.1 以降 (標準搭載)
+
+---
+
+[Issues](https://github.com/rukianosu/RukiTech-Diagnostic-Tool/issues)

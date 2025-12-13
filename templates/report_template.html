@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RukiTech Diagnostic System Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #0078d4;
+        }
+
+        h1 {
+            border-bottom: 2px solid #0078d4;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            border-left: 5px solid #0078d4;
+            padding-left: 10px;
+            margin-top: 30px;
+            background: #eee;
+            padding: 5px 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .critical {
+            color: red;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .info {
+            color: green;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 0.8em;
+            float: right;
+        }
+
+        .summary-box {
+            background: #e6f2ff;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #b3d9ff;
+            margin-bottom: 20px;
+        }
+
+        .alert-box {
+            background: #ffe6e6;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ffb3b3;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>RukiTech Diagnostic Evaluation Report <span class="timestamp">{{GENERATED_DATE}}</span></h1>
+
+        <div class="summary-box">
+            <h3>診断サマリー</h3>
+            <p><strong>実行ID:</strong> {{RUN_ID}}</p>
+            <p><strong>収集期間:</strong> 過去 {{DAYS_COLLECTED}} 日間</p>
+            <p><strong>再起動回数:</strong> {{RESUME_COUNT}} 回</p>
+            <p><strong>診断ステータス:</strong> {{STATUS}}</p>
+            <div id="action_items">
+                <h4>推奨アクション:</h4>
+                <ul>
+                    {{ACTION_ITEMS}}
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>1. システム基本情報</h2>
+            <table>
+                <tr>
+                    <th>項目</th>
+                    <th>値</th>
+                </tr>
+                {{SYSTEM_INFO_TABLE}}
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>2. 重大なイベント (直近の異常)</h2>
+            <p>Kernel-Power, BugCheck, WHEA-Logger, EventLog (Unexpected Shotdown) 等</p>
+            <table>
+                <tr>
+                    <th>日時</th>
+                    <th>ソース</th>
+                    <th>ID</th>
+                    <th>レベル</th>
+                    <th>メッセージ (要約)</th>
+                </tr>
+                {{CRITICAL_EVENTS_TABLE}}
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>3. 頻出エラー (Top 10)</h2>
+            <table>
+                <tr>
+                    <th>ソース</th>
+                    <th>ID</th>
+                    <th>回数</th>
+                </tr>
+                {{TOP_EVENTS_TABLE}}
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>4. ドライバ・ハードウェア診断</h2>
+            <p>以下のキーワードに関連するエラーが検出された場合、ハードウェアまたはドライバの不具合の可能性があります。<br>
+                (nvlddmkm, amdkmdag, stornvme, disk, etc.)</p>
+            <ul>
+                {{SUSPICIOUS_DRIVERS}}
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>5. 電源診断 (PowerCFG)</h2>
+            <p><strong>Battery Report:</strong> <a href="./{{BATTERY_REPORT_LINK}}">リンク</a> (ノートPCのみ)</p>
+            <p><strong>Energy Report:</strong> <a href="./{{ENERGY_REPORT_LINK}}">リンク</a></p>
+            <p><strong>現在の電源プラン:</strong> {{POWER_PLAN}}</p>
+        </div>
+
+        <div class="section">
+            <h2>6. 更新履歴・インストール済みアプリ</h2>
+            <p>詳細なCSVファイルは <code>raw/</code> フォルダを参照してください。</p>
+        </div>
+    </div>
+</body>
+
+</html>

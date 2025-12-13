@@ -59,8 +59,8 @@ $Action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
 # トリガーの作成（PC起動時）
 $Trigger = New-ScheduledTaskTrigger -AtStartup
 
-# プリンシパルの作成（最高権限で実行）
-$Principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+# プリンシパルの作成（現在のユーザーで最高権限で実行）
+$Principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -RunLevel Highest
 
 # タスク設定の作成
 $Settings = New-ScheduledTaskSettingsSet `
@@ -86,7 +86,7 @@ try {
     Write-Host "  タスク名: $TaskName"
     Write-Host "  実行スクリプト: $MainScriptPath"
     Write-Host "  トリガー: PC起動時"
-    Write-Host "  実行権限: SYSTEM（最高権限）"
+    Write-Host "  実行権限: $env:USERNAME（最高権限）"
     Write-Host "  バッテリー動作: 許可"
     Write-Host "`n次回のPC起動時から診断ツールが自動的に開始されます。" -ForegroundColor Green
     Write-Host "すぐに開始したい場合は、以下のコマンドを実行してください：" -ForegroundColor Yellow

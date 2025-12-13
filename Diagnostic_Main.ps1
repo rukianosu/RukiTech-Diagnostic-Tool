@@ -132,11 +132,13 @@ DELL Inspiron 5515 ドライババージョン情報
 
     # グラフィックスドライバ
     try {
-        $gpu = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.Name -like "*AMD*" -or $_.Name -like "*Radeon*" }
+        $gpu = Get-CimInstance -ClassName Win32_VideoController
         if ($gpu) {
-            $info += "`nGPU: $($gpu.Name)"
-            $info += "`nDriver Version: $($gpu.DriverVersion)"
-            $info += "`nDriver Date: $($gpu.DriverDate)"
+            foreach ($g in $gpu) {
+                $info += "`nGPU: $($g.Name)"
+                $info += "`nDriver Version: $($g.DriverVersion)"
+                $info += "`nDriver Date: $($g.DriverDate)"
+            }
         }
     }
     catch {
@@ -274,9 +276,9 @@ function Get-SystemMetrics {
         Write-Verbose "ストレージS.M.A.R.T.情報の取得に失敗"
     }
 
-    # GPU情報（AMD Radeonの場合、WMI経由での詳細情報取得は限定的）
+    # GPU情報 (WMI)
     try {
-        $gpu = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.Name -like "*AMD*" -or $_.Name -like "*Radeon*" } | Select-Object -First 1
+        $gpu = Get-CimInstance -ClassName Win32_VideoController | Select-Object -First 1
         if ($gpu) {
             # GPU温度は直接取得困難。OpenHardwareMonitor等のサードパーティツールが必要
             # ここでは基本情報のみ取得

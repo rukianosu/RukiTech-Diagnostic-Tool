@@ -275,6 +275,23 @@ if (-not (Check-Step "DriversApps") -and $Script:State.options.drivers) {
     }
 }
 
+# 5.5. Monitor Logs (Integration with existing tool)
+if (-not (Check-Step "MonitorLogs")) {
+    Log-Message "Checking for existing Monitor Mode logs..."
+    try {
+        $MonitorLogDir = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "PC_Diagnostic_Logs")
+        if (Test-Path $MonitorLogDir) {
+            $DestDir = Join-Path $Script:CurrentOutputDir "raw\MonitorLogs"
+            if (-not (Test-Path $DestDir)) { New-Item -ItemType Directory -Path $DestDir -Force | Out-Null }
+            Copy-Item "$MonitorLogDir\*" $DestDir -Recurse -Force -ErrorAction SilentlyContinue
+            Log-Message "Monitor logs copied from $MonitorLogDir."
+        }
+        Mark-Step-Complete "MonitorLogs"
+    } catch {
+        Log-Message "Error copying Monitor logs: $_" "ERROR"
+    }
+}
+
 # 6. Generate Report
 if (-not (Check-Step "Report")) {
     Log-Message "Generating HTML Report..."

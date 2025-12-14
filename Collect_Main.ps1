@@ -349,6 +349,8 @@ if (-not (Check-Step "Report")) {
         $Report = $TplContent `
             .Replace("{{GENERATED_DATE}}", (Get-Date).ToString()) `
             .Replace("{{RUN_ID}}", $Script:State.run_id) `
+            .Replace("{{PC_MODEL}}", "$($SysInfo.CsModel)") `
+            .Replace("{{PC_SERIAL}}", "$($SysInfo.BiosSeralNumber)") `
             .Replace("{{DAYS_COLLECTED}}", "$($Script:State.days)") `
             .Replace("{{RESUME_COUNT}}", "$($Script:State.resume_count)") `
             .Replace("{{STATUS}}", "Completed") `

@@ -15,6 +15,8 @@ param (
     [switch]$Opt_Zip,
     [switch]$Opt_AutoResume,
     
+    [string]$Webhook = "",
+    
     # Resume Parameters
     [switch]$Resume,
     [string]$StatePath
@@ -23,6 +25,30 @@ param (
 # ---------------------------------------------------------
 # Helper Functions
 # ---------------------------------------------------------
+
+function Send-DiscordNotification {
+    param([string]$Message, [string]$Title="", [string]$Color="3447003") # Blue default
+    if (-not [string]::IsNullOrWhiteSpace($Webhook)) {
+        try {
+            $Payload = @{
+                username = "RukiTech Diagnostic Agent"
+                embeds = @(
+                    @{
+                        title = $Title
+                        description = $Message
+                        color = $Color
+                        footer = @{ text = "RukiTech Diagnostic Tool" }
+                        timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                    }
+                )
+            }
+            $Json = $Payload | ConvertTo-Json -Depth 5
+            Invoke-RestMethod -Uri $Webhook -Method Post -Body $Json -ContentType 'application/json' -ErrorAction SilentlyContinue
+        } catch {
+            Log-Message "Failed to send Discord notification: $_" "WARNING"
+        }
+    }
+}
 
 function Log-Message {
     param([string]$Msg, [string]$Level="INFO")
@@ -108,6 +134,7 @@ else {
         run_id = $RunID
         output_dir = $Script:CurrentOutputDir
         days = $Days
+        webhook = $Webhook
         options = @{
             event_logs = $Opt_EventLogs.IsPresent
             sys_info = $Opt_SystemInfo.IsPresent
@@ -147,6 +174,7 @@ else {
     $LastRunData | ConvertTo-Json | Set-Content -Path (Join-Path $LastRunDir "last_run.json") -Encoding UTF8
     
     Log-Message "Starting New Collection Session: $RunID"
+    if ($Webhook) { Send-DiscordNotification "Diagnostic Collection Started for Run ID: **$RunID**" "🚀 Started" "3447003" }
     
     # Register Resume Task if needed
     if ($Opt_AutoResume) {
@@ -154,11 +182,20 @@ else {
         Register-CollectResumeTask -ResumeScriptPath (Join-Path $PSScriptRoot "Resume_Collect.ps1")
         Log-Message "Auto-resume task registered."
     }
+} else {
+    # If resuming, load webhook from state if available
+    if ($Script:State.webhook) { $Webhook = $Script:State.webhook }
 }
 
 # ---------------------------------------------------------
 # Execution Steps
 # ---------------------------------------------------------
+
+# ... (Previous steps remain the same) ...
+
+
+
+Log-Message "All operations completed."
 
 # 1. System Info
 if (-not (Check-Step "SystemInfo") -and $Script:State.options.sys_info) {
@@ -174,6 +211,7 @@ if (-not (Check-Step "SystemInfo") -and $Script:State.options.sys_info) {
         Mark-Step-Complete "SystemInfo"
     } catch {
         Log-Message "Error collecting System Info: $_" "ERROR"
+        if ($Webhook) { Send-DiscordNotification "Error collecting System Info: $_" "⚠️ Error" "15158332" }
     }
 }
 
@@ -205,6 +243,7 @@ if (-not (Check-Step "EventLogs") -and $Script:State.options.event_logs) {
         Mark-Step-Complete "EventLogs"
     } catch {
         Log-Message "Error collecting Event Logs: $_" "ERROR"
+        if ($Webhook) { Send-DiscordNotification "Error collecting Event Logs: $_" "⚠️ Error" "15158332" }
     }
 }
 
@@ -230,6 +269,7 @@ if (-not (Check-Step "Dumps")) {
         Mark-Step-Complete "Dumps"
     } catch {
         Log-Message "Error copying dumps: $_" "ERROR"
+        if ($Webhook) { Send-DiscordNotification "Error copying crash dumps: $_" "⚠️ Error" "15158332" }
     }
 }
 
@@ -256,6 +296,7 @@ if (-not (Check-Step "Power")) {
         Mark-Step-Complete "Power"
     } catch {
         Log-Message "Error collecting Power reports: $_" "ERROR"
+        if ($Webhook) { Send-DiscordNotification "Error collecting Power Reports: $_" "⚠️ Error" "15158332" }
     }
 }
 
@@ -272,6 +313,7 @@ if (-not (Check-Step "DriversApps") -and $Script:State.options.drivers) {
         Mark-Step-Complete "DriversApps"
     } catch {
         Log-Message "Error collecting Drivers/Apps: $_" "ERROR"
+        if ($Webhook) { Send-DiscordNotification "Error collecting Drivers/Apps: $_" "⚠️ Error" "15158332" }
     }
 }
 
@@ -419,6 +461,7 @@ if (-not (Check-Step "Report")) {
         Mark-Step-Complete "Report"
     } catch {
         Log-Message "Error generating report: $_" "ERROR"
+        if ($Webhook) { Send-DiscordNotification "Error generating HTML Report: $_" "⚠️ Error" "15158332" }
     }
 }
 
@@ -432,6 +475,7 @@ if (-not (Check-Step "Zip") -and $Script:State.options.zip) {
         Mark-Step-Complete "Zip"
     } catch {
         Log-Message "Error zipping: $_" "ERROR"
+        if ($Webhook) { Send-DiscordNotification "Error compressing output: $_" "⚠️ Error" "15158332" }
     }
 }
 

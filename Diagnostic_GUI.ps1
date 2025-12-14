@@ -108,6 +108,18 @@ $BtnRestore.Size = New-Object System.Drawing.Size(170, 25)
 $BtnRestore.BackColor = "LightGray"
 $Form.Controls.Add($BtnRestore)
 
+# Discord Webhook (Optional)
+$LblDiscord = New-Object System.Windows.Forms.Label
+$LblDiscord.Text = "Discord Webhook URL (Optional):"
+$LblDiscord.Location = New-Object System.Drawing.Point(10, 280)
+$LblDiscord.AutoSize = $true
+$Form.Controls.Add($LblDiscord)
+
+$TxtDiscord = New-Object System.Windows.Forms.TextBox
+$TxtDiscord.Location = New-Object System.Drawing.Point(200, 277)
+$TxtDiscord.Size = New-Object System.Drawing.Size(370, 23)
+$Form.Controls.Add($TxtDiscord)
+
 # Start Button
 $BtnStart = New-Object System.Windows.Forms.Button
 $BtnStart.Text = "START COLLECTION"
@@ -279,6 +291,11 @@ $BtnStart.Add_Click({
     if ($ChkBattery.Checked) { $ArgsList += "-Opt_BatteryReport" }
     if ($ChkZip.Checked) { $ArgsList += "-Opt_Zip" }
     if ($ChkResume.Checked) { $ArgsList += "-Opt_AutoResume" }
+    
+    if (-not [string]::IsNullOrWhiteSpace($TxtDiscord.Text)) {
+        $ArgsList += "-Webhook"
+        $ArgsList += $TxtDiscord.Text
+    }
     
     $TxtLog.AppendText("Starting Collection Process... Please wait...`r`n")
     $Script:StartTime = Get-Date

@@ -97,6 +97,17 @@ $ChkZip        = Add-Check "Compress Output (ZIP)" 300 120
 $ChkResume     = Add-Check "Auto-Resume after Reboot" 300 150
 $ChkResume.Font = New-Object System.Drawing.Font($Font, [System.Drawing.FontStyle]::Bold)
 
+$ChkNoSleep    = Add-Check "Prevent Sleep (Create Temp Power Plan)" 300 180
+$ChkNoSleep.Checked = $true
+
+# Restore Power Button
+$BtnRestore = New-Object System.Windows.Forms.Button
+$BtnRestore.Text = "Restore Power Settings"
+$BtnRestore.Location = New-Object System.Drawing.Point(400, 310) # Right above Start
+$BtnRestore.Size = New-Object System.Drawing.Size(170, 25)
+$BtnRestore.BackColor = "LightGray"
+$Form.Controls.Add($BtnRestore)
+
 # Start Button
 $BtnStart = New-Object System.Windows.Forms.Button
 $BtnStart.Text = "START COLLECTION"
@@ -142,6 +153,90 @@ $Script:CurrentLogFile = $null
 $Timer = New-Object System.Windows.Forms.Timer
 $Timer.Interval = 1000 # 1 sec
 
+# Power Management Functions
+$PowerBackupFile = Join-Path $env:USERPROFILE "Desktop\Ruki_Original_Power_Scheme.txt"
+
+function Enable-NoSleep {
+    $TxtLog.AppendText("Initializing Sleep Prevention...`r`n")
+    try {
+        # 1. Get Current Scheme
+        $CurrentSchemeLine = powercfg /getactivescheme
+        # Extract GUID (Simple regex or split)
+        # Format: Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)
+        if ($CurrentSchemeLine -match "GUID:\s+([a-f0-9\-]+)") {
+            $OriginalGuid = $matches[1]
+            
+            # Save if not already saved (don't overwrite original if running twice)
+            if (-not (Test-Path $PowerBackupFile)) {
+                $OriginalGuid | Out-File $PowerBackupFile -Encoding UTF8
+                $TxtLog.AppendText("Original Power Scheme saved: $OriginalGuid`r`n")
+            }
+            
+            # 2. Duplicate Scheme
+            # powercfg -duplicatescheme <GUID> <DEST_GUID> (optional)
+            # captures the output to get new guid
+            $DupOutput = powercfg -duplicatescheme $OriginalGuid
+            if ($DupOutput -match "GUID:\s+([a-f0-9\-]+)") {
+                $NewScheme = $matches[1]
+                
+                # 3. Rename and Activate
+                powercfg -changename $NewScheme "RukiTech Diagnostic Mode"
+                powercfg -setactive $NewScheme
+                
+                # 4. Disable Sleep/Monitor Timeout (AC and DC)
+                powercfg -change -monitor-timeout-ac 0
+                powercfg -change -monitor-timeout-dc 0
+                powercfg -change -disk-timeout-ac 0
+                powercfg -change -disk-timeout-dc 0
+                powercfg -change -standby-timeout-ac 0
+                powercfg -change -standby-timeout-dc 0
+                powercfg -change -hibernate-timeout-ac 0
+                powercfg -change -hibernate-timeout-dc 0
+                
+                $TxtLog.AppendText("Active Power Plan changed to 'RukiTech Diagnostic Mode' (No Sleep).`r`n")
+            }
+        }
+    } catch {
+        $TxtLog.AppendText("Error setting power plan: $_`r`n")
+    }
+}
+
+function Restore-Power {
+    if (Test-Path $PowerBackupFile) {
+        try {
+            $OriginalGuid = Get-Content $PowerBackupFile -Raw
+            $OriginalGuid = $OriginalGuid.Trim()
+            
+            $TxtLog.AppendText("Restoring Power Scheme to: $OriginalGuid...`r`n")
+            
+            powercfg -setactive $OriginalGuid
+            
+            # Identify the temp scheme to delete
+            $List = powercfg /list
+            # We can't easily parse list to find GUID by name in PS 5.1 cleanly without regex, 
+            # but we can try to find the one we just left? 
+            # Actually, user might have just switched. 
+            # Simple cleanup: Find any scheme named "RukiTech Diagnostic Mode" and delete it.
+            
+            # We will just leave it inactive or try to delete current if it was Ruki
+            # Re-reading list is complex. For now, just activating original is sufficient validation.
+            
+            Remove-Item $PowerBackupFile -Force
+            $TxtLog.AppendText("Power settings restored successfully!`r`n")
+            [System.Windows.Forms.MessageBox]::Show("Power settings have been restored.", "Success", "OK", "Information")
+        } catch {
+            $TxtLog.AppendText("Error restoring power settings: $_`r`n")
+            [System.Windows.Forms.MessageBox]::Show("Failed to restore settings. Please check manually.", "Error", "OK", "Error")
+        }
+    } else {
+        [System.Windows.Forms.MessageBox]::Show("No backup found. Settings might be already original.", "Info", "OK", "Information")
+    }
+}
+
+$BtnRestore.Add_Click({
+    Restore-Power
+})
+
 $Timer.Add_Tick({
     if ($Script:CurrentLogFile -and (Test-Path $Script:CurrentLogFile)) {
         try {
@@ -158,6 +253,12 @@ $BtnStart.Add_Click({
     $BtnStart.Enabled = $false
     $GrpOptions.Enabled = $false
     $GrpOutput.Enabled = $false
+    $BtnRestore.Enabled = $false
+    
+    # Handle Sleep Prevention
+    if ($ChkNoSleep.Checked) {
+        Enable-NoSleep
+    }
     
     $LogDir = Join-Path $TxtPath.Text ("RukiCollect_" + (Get-Date -Format "yyyyMMdd_HHmmss"))
     # We predict the log file path based on Collect_Main logic.
@@ -179,7 +280,7 @@ $BtnStart.Add_Click({
     if ($ChkZip.Checked) { $ArgsList += "-Opt_Zip" }
     if ($ChkResume.Checked) { $ArgsList += "-Opt_AutoResume" }
     
-    $TxtLog.Text = "Starting Collection Process... Please wait..."
+    $TxtLog.AppendText("Starting Collection Process... Please wait...`r`n")
     $Script:StartTime = Get-Date
 
     try {
@@ -208,6 +309,7 @@ $BtnStart.Add_Click({
     } catch {
         $TxtLog.Text = "Failed to start process: $_"
         $BtnStart.Enabled = $true
+        $BtnRestore.Enabled = $true
     }
 })
 

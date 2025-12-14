@@ -345,6 +345,32 @@ if (-not (Check-Step "Report")) {
         if ($Scripts:State.resume_count -gt 0) { $Actions += "<li>System restarted during diagnostics ($($Script:State.resume_count) times). Instability confirmed.</li>" }
         $ActionsHtml = if ($Actions) { $Actions -join "`n" } else { "<li>No immediate actions identified. Review logs manually.</li>" }
 
+        # Battery Health Calculation
+        $BatHealthText = "Info Not Available (Desktop?)"
+        try {
+            # Try WMI first
+            $Static = Get-CimInstance -Namespace root\wmi -ClassName BatteryStaticData -ErrorAction SilentlyContinue | Select-Object -First 1
+            $Full   = Get-CimInstance -Namespace root\wmi -ClassName BatteryFullChargedCapacity -ErrorAction SilentlyContinue | Select-Object -First 1
+            
+            if ($Static -and $Full -and $Static.DesignedCapacity -gt 0) {
+                # Some devices report in different units, but usually relative.
+                $Design = $Static.DesignedCapacity
+                $CurrentFull = $Full.FullChargedCapacity
+                
+                # Check for plausibility
+                if ($Design -gt 100000000) { $Design = $Design / 1000 } # Sanity check for massive numbers
+                if ($CurrentFull -gt 100000000) { $CurrentFull = $CurrentFull / 1000 }
+
+                $HealthPct = ($CurrentFull / $Design) * 100
+                
+                # Coloring
+                $Color = if ($HealthPct -lt 50) { "red" } elseif ($HealthPct -lt 70) { "orange" } else { "green" }
+                $BatHealthText = "<span style='color:$Color; font-weight:bold;'>$("{0:N1}" -f $HealthPct)%</span> (Design: $Design, Current Full: $CurrentFull)"
+            }
+        } catch {
+             $BatHealthText = "Error calculating: $_"
+        }
+
         # Replacements
         $Report = $TplContent `
             .Replace("{{GENERATED_DATE}}", (Get-Date).ToString()) `
@@ -359,6 +385,7 @@ if (-not (Check-Step "Report")) {
             .Replace("{{CRITICAL_EVENTS_TABLE}}", $EventRows) `
             .Replace("{{TOP_EVENTS_TABLE}}", $TopEventsRows) `
             .Replace("{{SUSPICIOUS_DRIVERS}}", $SuspiciousHtml) `
+            .Replace("{{BATTERY_HEALTH}}", $BatHealthText) `
             .Replace("{{BATTERY_REPORT_LINK}}", "raw/battery-report.html") `
             .Replace("{{ENERGY_REPORT_LINK}}", "raw/energy-report.html") `
             .Replace("{{POWER_PLAN}}", (Get-CimInstance Win32_PowerPlan -Namespace root\cimv2\power -Filter "IsActive='$true'" | Select-Object -ExpandProperty ElementName))

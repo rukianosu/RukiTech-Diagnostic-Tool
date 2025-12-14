@@ -371,12 +371,37 @@ if (-not (Check-Step "Report")) {
              $BatHealthText = "Error calculating: $_"
         }
 
+        # Additional Specs Calculation
+        $OsVer = "$($SysInfo.OsName) ($($SysInfo.OsVersion))"
+        
+        $MemStorageInfo = "Info Not Available"
+        try {
+            $MemCSV = Import-Csv (Join-Path $Script:CurrentOutputDir "raw\memory.csv")
+            $TotalBytes = ($MemCSV | Measure-Object -Property Capacity -Sum).Sum
+            $TotalGB = [math]::Round($TotalBytes / 1GB, 1)
+            
+            $DiskCSV = Import-Csv (Join-Path $Script:CurrentOutputDir "raw\disk.csv")
+            # Might be multiple disks
+            $DiskInfo = @()
+            foreach ($d in $DiskCSV) {
+                $SizeGB = [math]::Round([int64]$d.Size / 1GB, 0)
+                $DiskInfo += "$($d.Model) (${SizeGB}GB)"
+            }
+            $DiskStr = $DiskInfo -join " / "
+            
+            $MemStorageInfo = "RAM: ${TotalGB}GB | Disk: $DiskStr"
+        } catch {
+             $MemStorageInfo = "Error: $_"
+        }
+
         # Replacements
         $Report = $TplContent `
             .Replace("{{GENERATED_DATE}}", (Get-Date).ToString()) `
             .Replace("{{RUN_ID}}", $Script:State.run_id) `
             .Replace("{{PC_MODEL}}", "$($SysInfo.CsModel)") `
             .Replace("{{PC_SERIAL}}", "$($SysInfo.BiosSeralNumber)") `
+            .Replace("{{OS_VERSION}}", $OsVer) `
+            .Replace("{{MEM_STORAGE_INFO}}", $MemStorageInfo) `
             .Replace("{{DAYS_COLLECTED}}", "$($Script:State.days)") `
             .Replace("{{RESUME_COUNT}}", "$($Script:State.resume_count)") `
             .Replace("{{STATUS}}", "Completed") `

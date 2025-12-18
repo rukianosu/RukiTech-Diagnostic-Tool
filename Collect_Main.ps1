@@ -441,25 +441,24 @@ if (-not (Check-Step "Report")) {
         }
 
         # Replacements
-        $Report = $TplContent `
-            .Replace("{{GENERATED_DATE}}", (Get-Date).ToString()) `
-            .Replace("{{RUN_ID}}", $Script:State.run_id) `
-            .Replace("{{PC_MODEL}}", "$($SysInfo.CsModel)") `
-            .Replace("{{PC_SERIAL}}", "$($SysInfo.BiosSeralNumber)") `
-            .Replace("{{OS_VERSION}}", $OsVer) `
-            .Replace("{{MEM_STORAGE_INFO}}", $MemStorageInfo) `
-            .Replace("{{DAYS_COLLECTED}}", "$($Script:State.days)") `
-            .Replace("{{RESUME_COUNT}}", "$($Script:State.resume_count)") `
-            .Replace("{{STATUS}}", "Completed") `
-            .Replace("{{ACTION_ITEMS}}", $ActionsHtml) `
-            .Replace("{{SYSTEM_INFO_TABLE}}", $InfoTable) `
-            .Replace("{{CRITICAL_EVENTS_TABLE}}", $EventRows) `
-            .Replace("{{TOP_EVENTS_TABLE}}", $TopEventsRows) `
-            .Replace("{{SUSPICIOUS_DRIVERS}}", $SuspiciousHtml) `
-            .Replace("{{BATTERY_HEALTH}}", $BatHealthText) `
-            .Replace("{{BATTERY_REPORT_LINK}}", "raw/battery-report.html") `
-            .Replace("{{ENERGY_REPORT_LINK}}", "raw/energy-report.html") `
-            .Replace("{{POWER_PLAN}}", (Get-CimInstance Win32_PowerPlan -Namespace root\cimv2\power -Filter "IsActive='$true'" | Select-Object -ExpandProperty ElementName))
+        $Report = $TplContent.Replace("{{GENERATED_DATE}}", (Get-Date).ToString())
+        $Report = $Report.Replace("{{RUN_ID}}", $Script:State.run_id)
+        $Report = $Report.Replace("{{PC_MODEL}}", "$($SysInfo.CsModel)")
+        $Report = $Report.Replace("{{PC_SERIAL}}", "$($SysInfo.BiosSeralNumber)")
+        $Report = $Report.Replace("{{OS_VERSION}}", $OsVer)
+        $Report = $Report.Replace("{{MEM_STORAGE_INFO}}", $MemStorageInfo)
+        $Report = $Report.Replace("{{DAYS_COLLECTED}}", "$($Script:State.days)")
+        $Report = $Report.Replace("{{RESUME_COUNT}}", "$($Script:State.resume_count)")
+        $Report = $Report.Replace("{{STATUS}}", "Completed")
+        $Report = $Report.Replace("{{ACTION_ITEMS}}", $ActionsHtml)
+        $Report = $Report.Replace("{{SYSTEM_INFO_TABLE}}", $InfoTable)
+        $Report = $Report.Replace("{{CRITICAL_EVENTS_TABLE}}", $EventRows)
+        $Report = $Report.Replace("{{TOP_EVENTS_TABLE}}", $TopEventsRows)
+        $Report = $Report.Replace("{{SUSPICIOUS_DRIVERS}}", $SuspiciousHtml)
+        $Report = $Report.Replace("{{BATTERY_HEALTH}}", $BatHealthText)
+        $Report = $Report.Replace("{{BATTERY_REPORT_LINK}}", "raw/battery-report.html")
+        $Report = $Report.Replace("{{ENERGY_REPORT_LINK}}", "raw/energy-report.html")
+        $Report = $Report.Replace("{{POWER_PLAN}}", (Get-CimInstance Win32_PowerPlan -Namespace root\cimv2\power -Filter "IsActive='$true'" | Select-Object -ExpandProperty ElementName))
 
         $Report | Set-Content (Join-Path $Script:CurrentOutputDir "REPORT.html") -Encoding UTF8
         Mark-Step-Complete "Report"

@@ -54,7 +54,11 @@ function Log-Message {
     param([string]$Msg, [string]$Level="INFO")
     $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $LogLine = "[$Timestamp][$Level] $Msg"
-    Write-Host $LogLine -ForegroundColor ($Level -eq "ERROR" ? "Red" : "Gray")
+    if ($Level -eq "ERROR") {
+        Write-Host $LogLine -ForegroundColor Red
+    } else {
+        Write-Host $LogLine -ForegroundColor Gray
+    }
     if ($Script:LogFile) {
         Add-Content -Path $Script:LogFile -Value $LogLine -Encoding UTF8
     }
